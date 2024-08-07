@@ -65,8 +65,7 @@ class DuckRouterConfiguration {
   }
 
   /// Removes a location from the current dynamic directory of locations.
-  void removeLocation<T>(Location location, [FutureOr<T>? value]) {
-    _routeMapping[location.path]?.completer?.complete(value);
+  void removeLocation<T>(Location location) {
     _routeMapping.remove(location.path);
   }
 }

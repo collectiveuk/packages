@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../navigator.dart';
+
 typedef TransitionBuilder = Widget Function(
   BuildContext context,
   Animation<double> animation,
@@ -29,6 +31,7 @@ class DuckPage<T> extends Page<T> {
   const DuckPage({
     required this.child,
     required this.transitionsBuilder,
+    required OnPopInvokedCallback onPopInvoked,
     this.isModal = false,
     this.transitionDuration = const Duration(milliseconds: 300),
     this.reverseTransitionDuration = const Duration(milliseconds: 300),

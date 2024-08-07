@@ -4,6 +4,8 @@
 
 import 'package:flutter/cupertino.dart';
 
+import '../navigator.dart';
+
 bool isCupertinoApp(BuildContext context) =>
     context.findAncestorWidgetOfExactType<CupertinoApp>() != null;
 
@@ -14,9 +16,11 @@ CupertinoPage<void> pageBuilderForCupertinoApp({
   required LocalKey key,
   required String? name,
   required Widget child,
+  required OnPopInvokedCallback onPopInvoked,
 }) =>
     CupertinoPage<void>(
       name: name,
       key: key,
       child: child,
+      onPopInvoked: onPopInvoked,
     );

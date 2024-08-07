@@ -174,6 +174,11 @@ class DuckRouter implements RouterConfig<LocationStack> {
     routerDelegate.root();
   }
 
+  void onPopInvoked(Location location, bool didPop, Object? result) {
+    final locationMatch = configuration.findLocation(location.path);
+    locationMatch?.completer?.complete(result);
+  }
+
   LocationStack _initialLocation(Location userSpecifiedInitialLocation) {
     Uri platformInitialLocation = Uri.parse(
       WidgetsBinding.instance.platformDispatcher.defaultRouteName,

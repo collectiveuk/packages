@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:duck_router/src/location.dart';
+
+import '../duck_router.dart';
 import 'pages/cupertino.dart';
 import 'pages/material.dart';
+
+typedef OnPopInvokedCallback = void Function(bool didPop, Object? result);
 
 /// {@template duck_navigator}
 /// A [Navigator] for a [LocationStack].
@@ -11,7 +14,7 @@ class DuckNavigator extends StatefulWidget {
   const DuckNavigator({
     required this.stack,
     required this.navigatorKey,
-    required this.onPopPage,
+    required this.onDidRemovePage,
     super.key,
   });
 
@@ -21,7 +24,7 @@ class DuckNavigator extends StatefulWidget {
   /// The navigator key for this navigator.
   final GlobalKey<NavigatorState> navigatorKey;
 
-  final PopPageCallback onPopPage;
+  final DidRemovePageCallback onDidRemovePage;
 
   @override
   State<StatefulWidget> createState() {
@@ -35,6 +38,7 @@ class _DuckNavigatorState extends State<DuckNavigator> {
     required LocalKey key,
     required String? name,
     required Widget child,
+    required OnPopInvokedCallback onPopInvoked,
   })? _pageBuilderForAppType;
 
   /// Rebuilds are common, so we want to cache pages to rebuild only
@@ -76,7 +80,7 @@ class _DuckNavigatorState extends State<DuckNavigator> {
       child: Navigator(
         key: widget.navigatorKey,
         pages: _pages!,
-        onPopPage: widget.onPopPage,
+        onDidRemovePage: widget.onDidRemovePage,
       ),
     );
   }
@@ -115,6 +119,8 @@ class _DuckNavigatorState extends State<DuckNavigator> {
       key: ValueKey(location.path),
       name: location.path,
       child: location.builder!(context),
+      onPopInvoked: (didPop, result) =>
+          DuckRouter.of(context).onPopInvoked(location, didPop, result),
     );
   }
 

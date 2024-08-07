@@ -7,6 +7,7 @@ import 'package:duck_router/src/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
 import 'navigator.dart';
 
 /// {@template duck_shell}
@@ -217,15 +218,14 @@ class _NestedRouterDelegate extends RouterDelegate<LocationStack>
     return DuckNavigator(
       navigatorKey: navigatorKey,
       stack: currentConfiguration,
-      onPopPage: onPopPage,
+      onDidRemovePage: onDidRemovePage,
     );
   }
 
-  bool onPopPage(Route<Object?> route, Object? result) {
+  void onDidRemovePage(Page<Object?> page) {
     final currentLocation = currentConfiguration.locations.last;
-    _routerConfiguration.removeLocation(currentLocation, result);
+    _routerConfiguration.removeLocation(currentLocation);
     currentConfiguration.locations.removeLast();
-    return route.didPop(result);
   }
 
   @override

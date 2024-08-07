@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 import 'package:flutter/material.dart';
 
+import '../navigator.dart';
+
 bool isMaterialApp(BuildContext context) =>
     context.findAncestorWidgetOfExactType<MaterialApp>() != null;
 
@@ -13,9 +15,11 @@ MaterialPage<void> pageBuilderForMaterialApp({
   required LocalKey key,
   required String? name,
   required Widget child,
+  required OnPopInvokedCallback onPopInvoked,
 }) =>
     MaterialPage<void>(
       name: name,
       key: key,
       child: child,
+      onPopInvoked: onPopInvoked,
     );

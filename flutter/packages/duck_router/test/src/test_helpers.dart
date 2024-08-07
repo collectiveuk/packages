@@ -261,6 +261,8 @@ class CustomPageTransitionLocation extends Location {
         child: HomeScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
             FadeTransition(opacity: animation, child: child),
+        onPopInvoked: (didPop, result) =>
+            DuckRouter.of(context).onPopInvoked(this, didPop, result),
       );
 }
 

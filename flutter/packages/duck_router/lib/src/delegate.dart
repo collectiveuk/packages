@@ -1,10 +1,10 @@
 import 'package:collection/collection.dart';
-import 'package:duck_router/src/duck_router.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:duck_router/src/configuration.dart';
+import 'package:duck_router/src/duck_router.dart';
 import 'package:duck_router/src/exception.dart';
 import 'package:duck_router/src/location.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'navigator.dart';
 
@@ -32,18 +32,16 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
       DuckNavigator(
         navigatorKey: navigatorKey,
         stack: currentConfiguration,
-        onPopPage: onPopPage,
+        onDidRemovePage: onDidRemovePage,
       ),
     );
   }
 
-  /// See RouterDelegate.onPopPage.
-  bool onPopPage(Route<Object?> route, Object? result) {
+  /// See RouterDelegate.onDidRemovePage.
+  void onDidRemovePage(Page<Object?> page) {
     final currentLocation = currentConfiguration.locations.last;
-    _configuration.removeLocation(currentLocation, result);
-
+    _configuration.removeLocation(currentLocation);
     currentConfiguration.locations.removeLast();
-    return route.didPop(result);
   }
 
   @override
