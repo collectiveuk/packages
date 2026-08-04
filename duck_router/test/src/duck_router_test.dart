@@ -1230,6 +1230,29 @@ void main() {
       expect(find.byType(Page1Screen), findsOneWidget);
     });
 
+    testWidgets(
+        'can pop a root push back to the shell while on a non-first child',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: RootLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+
+      await tester.tap(find.text('Page 2'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Page2Screen), findsOneWidget);
+
+      router.navigate(to: HomeLocation(), root: true);
+      await tester.pumpAndSettle();
+      expect(find.byType(HomeScreen), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Page2Screen), findsOneWidget);
+    });
+
     testWidgets('can await navigate', (tester) async {
       final config = DuckRouterConfiguration(
         initialLocation: RootLocation(),

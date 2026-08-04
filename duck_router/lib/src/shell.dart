@@ -210,7 +210,13 @@ class DuckShellState extends State<DuckShell> {
   }
 
   void takePriority() {
-    _backButtonDispatchers[_currentIndex].takePriority();
+    if (_backButtonDispatchers.isEmpty) {
+      return;
+    }
+
+    // There is only ever one back button dispatcher; it is attached to
+    // whichever child is currently active, see [build].
+    _backButtonDispatchers[0].takePriority();
   }
 
   RouterDelegate get currentRouterDelegate => _routerDelegates[_currentIndex];
