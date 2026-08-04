@@ -1,3 +1,7 @@
+## 7.3.2
+
+ - **FIX**: null error when popping. ([240da45f](https://github.com/jaspervanriet/duck_router/commit/240da45fec24d42c92e1b64aed9dae3bbbff5730))
+
 ## 7.3.1
 
  - **FIX**: sync route information provider value after pop ([#82](https://github.com/jaspervanriet/duck_router/issues/82)). ([bbd3d14b](https://github.com/jaspervanriet/duck_router/commit/bbd3d14bc9e274017548e2e885aac20cb445e3d3))
