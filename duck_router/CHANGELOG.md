@@ -1,3 +1,7 @@
+## 7.3.3
+
+ - **FIX**: ensure stack integrity when clearing or replacing. ([9ab4996e](https://github.com/jaspervanriet/duck_router/commit/9ab4996e3782f433fda1eaec9c404e703db18017))
+
 ## 7.3.2
 
  - **FIX**: null error when popping. ([240da45f](https://github.com/jaspervanriet/duck_router/commit/240da45fec24d42c92e1b64aed9dae3bbbff5730))
