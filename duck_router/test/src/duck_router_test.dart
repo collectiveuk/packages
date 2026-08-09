@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:duck_router/src/configuration.dart';
 import 'package:duck_router/src/duck_router.dart';
 import 'package:duck_router/src/exception.dart';
+import 'package:duck_router/src/interceptor.dart';
 import 'package:duck_router/src/location.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -2348,6 +2349,168 @@ void main() {
       expect(locations2.uri.path, '/root/child1/home');
     });
   });
+
+  /// The stack should never end up empty.
+  group('Stack integrity', () {
+    testWidgets(
+        'clearStack does not empty the stack when the parse is discarded',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+      router.navigate(to: Page1Location());
+      await tester.pumpAndSettle();
+      expect(find.byType(Page1Screen), findsOneWidget);
+
+      // The back press starts a new router transaction, which makes [Router]
+      // throw away the parse this navigation kicked off.
+      router.navigate(to: Page2Location(), clearStack: true);
+      tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.locations, isNotEmpty);
+
+      // The router is still usable.
+      router.navigate(to: Page3Location());
+      await tester.pumpAndSettle();
+      expect(find.byType(Page3Screen), findsOneWidget);
+    });
+
+    testWidgets('replace does not empty the stack when the parse is discarded',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+
+      router.navigate(to: Page1Location(), replace: true);
+      tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.locations, isNotEmpty);
+
+      router.navigate(to: Page2Location());
+      await tester.pumpAndSettle();
+      expect(find.byType(Page2Screen), findsOneWidget);
+    });
+
+    testWidgets('clearStack from a shell does not empty the root stack',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: RootLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+      router.navigate(to: Page3Location(), root: true);
+      await tester.pumpAndSettle();
+      expect(find.byType(Page3Screen), findsOneWidget);
+
+      router.navigate(to: HomeLocation(), clearStack: true, root: true);
+      tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.locations, isNotEmpty);
+
+      // The shell is still on screen. Tapping something on it used to throw,
+      // because there was no location left to navigate from.
+      router.navigate(to: Page2Location(), root: true);
+      await tester.pumpAndSettle();
+      expect(find.byType(Page2Screen), findsOneWidget);
+    });
+
+    testWidgets('an interceptor that throws does not corrupt the stack',
+        (tester) async {
+      final interceptor = ThrowingInterceptor();
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+        interceptors: [interceptor],
+      );
+
+      final router = await createRouter(config, tester);
+
+      final errors = <Object>[];
+      interceptor.active = true;
+      runZonedGuarded(
+        () => router.navigate(to: Page1Location(), clearStack: true),
+        (e, s) => errors.add(e),
+      );
+      await tester.pumpAndSettle();
+
+      expect(errors, isNotEmpty);
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/home');
+
+      interceptor.active = false;
+      router.navigate(to: Page1Location());
+      await tester.pumpAndSettle();
+      expect(find.byType(Page1Screen), findsOneWidget);
+    });
+
+    testWidgets('popping the last page of the root navigator is a no-op',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+
+      // Popping a sheet that is already closed does this: [NavigatorState.pop]
+      // does not check [NavigatorState.canPop], so it pops the page instead.
+      config.rootNavigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path, '/home');
+
+      router.navigate(to: Page1Location());
+      await tester.pumpAndSettle();
+      expect(find.byType(Page1Screen), findsOneWidget);
+    });
+
+    testWidgets('exiting the only root location keeps the nested stack',
+        (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: RootLocation(),
+      );
+
+      final router = await createRouter(config, tester);
+      router.navigate(to: Page1Location());
+      await tester.pumpAndSettle();
+
+      final statefulLocation = router.routerDelegate.currentConfiguration
+          .locations.last as StatefulLocation;
+      expect(
+        statefulLocation
+            .state.currentRouterDelegate.currentConfiguration.uri.path,
+        '/child1/page1',
+      );
+
+      // There is nothing to exit to, so this throws. It used to clear the
+      // nested stack before it did.
+      expect(() => router.exit(), throwsA(isA<EmptyStackException>()));
+      await tester.pumpAndSettle();
+
+      expect(
+        statefulLocation
+            .state.currentRouterDelegate.currentConfiguration.uri.path,
+        '/child1/page1',
+      );
+      expect(find.byType(Page1Screen), findsOneWidget);
+    });
+  });
+}
+
+class ThrowingInterceptor extends LocationInterceptor {
+  bool active = false;
+
+  @override
+  Location? execute(Location to, Location? from) {
+    if (active) {
+      throw StateError('Interceptor blew up');
+    }
+    return null;
+  }
 }
 
 TestWidgetsFlutterBinding _retrieveTestBinding(WidgetTester tester) {

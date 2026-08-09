@@ -149,20 +149,31 @@ class DuckShellState extends State<DuckShell> {
     bool? clearStack,
   }) async {
     Location? replaced;
+    final currentStack = _currentRouterDelegate.currentConfiguration;
+
+    // As in [DuckRouter.navigate], we leave the delegate's stack alone and
+    // hand the parse a copy. The stack only changes once the new one has been
+    // parsed.
+    var baseLocationStack = currentStack;
 
     if (clearStack ?? false) {
-      for (final l in currentRouterDelegate.currentConfiguration.locations) {
+      for (final l in currentStack.locations) {
         widget.configuration.clearLocation(l);
       }
-      currentRouterDelegate.currentConfiguration.locations.clear();
+      baseLocationStack = LocationStack(locations: []);
     } else if (replace ?? false) {
-      replaced =
-          currentRouterDelegate.currentConfiguration.locations.removeLast();
+      replaced = currentStack.locations.lastOrNull;
+      baseLocationStack = LocationStack(
+        locations: currentStack.locations.isEmpty
+            ? []
+            : currentStack.locations
+                .sublist(0, currentStack.locations.length - 1),
+      );
     }
 
     return _informationProviders[_currentIndex].navigate<T>(
       to,
-      baseLocationStack: currentRouterDelegate.currentConfiguration,
+      baseLocationStack: baseLocationStack,
       replaced: replaced,
     );
   }
@@ -219,7 +230,10 @@ class DuckShellState extends State<DuckShell> {
     _backButtonDispatchers[0].takePriority();
   }
 
-  RouterDelegate get currentRouterDelegate => _routerDelegates[_currentIndex];
+  RouterDelegate get currentRouterDelegate => _currentRouterDelegate;
+
+  _NestedRouterDelegate get _currentRouterDelegate =>
+      _routerDelegates[_currentIndex];
 }
 
 typedef _NewPathCallback = void Function(LocationStack configuration);
@@ -264,6 +278,10 @@ class _NestedRouterDelegate extends RouterDelegate<LocationStack>
   /// See RouterDelegate.onPopPage.
   void onPopPage(bool didPop, Object? result) {
     if (!didPop) return;
+
+    // The last location can never be popped, see
+    // [DuckRouterDelegate._onPopPage].
+    if (currentConfiguration.locations.length <= 1) return;
 
     final currentLocation = currentConfiguration.locations.last;
     _routerConfiguration.removeLocation(currentLocation, result);

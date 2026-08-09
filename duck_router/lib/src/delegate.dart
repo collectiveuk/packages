@@ -57,6 +57,15 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
   void _onPopPage(bool didPop, Object? result) {
     if (!didPop) return;
 
+    // The last location can never be popped: it is the page this [Navigator]
+    // always shows. Removing it would leave the router without a current
+    // location, and every navigation after it would throw.
+    //
+    // We do check here for it, because [NavigatorState.pop] does not check
+    // [NavigatorState.canPop] first. Popping an already closed sheet, for
+    // example, pops the page underneath it instead.
+    if (currentConfiguration.locations.length <= 1) return;
+
     final currentLocation = currentConfiguration.locations.last;
     _configuration.removeLocation(currentLocation, result);
 
@@ -118,7 +127,10 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
 
   /// Pops the top location on the routing stack
   void pop<T extends Object?>([T? result, bool root = false]) {
-    final currentLocation = currentConfiguration.locations.last;
+    final currentLocation = currentConfiguration.locations.lastOrNull;
+    if (currentLocation == null) {
+      throw const EmptyStackException();
+    }
 
     if (currentLocation is StatefulLocation && !root) {
       /// Pop inside the stateful child location as long as that's possible.
@@ -128,6 +140,12 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
           1) {
         return currentLocation.state.pop(result);
       }
+    }
+
+    // This check comes before the cleanup below: a pop we cannot honour
+    // should leave both stacks as they were.
+    if (currentConfiguration.locations.length == 1) {
+      throw const EmptyStackException();
     }
 
     if (currentLocation is StatefulLocation && root) {
@@ -145,14 +163,11 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
     if (navigatorKey.currentState?.canPop() ?? false) {
       state = navigatorKey.currentState;
     }
-    if (currentConfiguration.locations.length == 1) {
-      throw const EmptyStackException();
-    }
     state?.pop(result);
   }
 
   void popUntil<T extends Object?>(LocationPredicate predicate, [T? result]) {
-    final currentLocation = currentConfiguration.locations.last;
+    final currentLocation = currentConfiguration.locations.lastOrNull;
 
     if (currentLocation is StatefulLocation) {
       /// Pop inside the stateful child location as long as that's possible.
@@ -184,7 +199,7 @@ class DuckRouterDelegate extends RouterDelegate<LocationStack>
 
   /// Reset the router to the root
   void root() {
-    final currentLocation = currentConfiguration.locations.last;
+    final currentLocation = currentConfiguration.locations.lastOrNull;
 
     if (currentLocation is StatefulLocation) {
       /// Pop inside the stateful child location as long as that's possible.

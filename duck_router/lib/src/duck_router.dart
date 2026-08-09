@@ -158,7 +158,7 @@ class DuckRouter implements RouterConfig<LocationStack> {
     bool? clearStack,
   }) {
     final currentStack = routerDelegate.currentConfiguration;
-    final currentRootLocation = currentStack.locations.last;
+    final currentRootLocation = currentStack.locations.lastOrNull;
     Location? replaced;
 
     if (clearStack ?? false) {
@@ -173,11 +173,18 @@ class DuckRouter implements RouterConfig<LocationStack> {
       for (final l in currentStack.locations) {
         configuration.clearLocation(l);
       }
-      currentStack.locations.clear();
 
+      // We hand over a new, empty stack instead of emptying [currentStack].
+      // That object is the delegate's current configuration, which should
+      // only change once the new stack has been parsed.
+      //
+      // The parse does not always happen: [Router] drops it when a back
+      // button press starts a new transaction first, and skips it entirely
+      // when an interceptor throws. Emptying up front would leave the router
+      // without any location at all, breaking every navigation after it.
       return routeInformationProvider.navigate<T>(
         to,
-        baseLocationStack: currentStack,
+        baseLocationStack: LocationStack(locations: []),
       );
     }
 
@@ -200,13 +207,23 @@ class DuckRouter implements RouterConfig<LocationStack> {
       }
     }
 
+    // Same as in the [clearStack] branch above: we drop the replaced location
+    // from a copy, so that the delegate keeps its stack until the new one has
+    // been parsed.
+    var baseLocationStack = currentStack;
     if (replace ?? false) {
-      replaced = currentStack.locations.removeLast();
+      replaced = currentStack.locations.lastOrNull;
+      baseLocationStack = LocationStack(
+        locations: currentStack.locations.isEmpty
+            ? []
+            : currentStack.locations
+                .sublist(0, currentStack.locations.length - 1),
+      );
     }
 
     return routeInformationProvider.navigate<T>(
       to,
-      baseLocationStack: currentStack,
+      baseLocationStack: baseLocationStack,
       replaced: replaced,
     );
   }
