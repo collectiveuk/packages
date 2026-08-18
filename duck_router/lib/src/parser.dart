@@ -86,17 +86,39 @@ class DuckInformationParser extends RouteInformationParser<LocationStack> {
         );
         _configuration.onNavigate?.call(result);
         if (i.pushesOnTop) {
-          return LocationStack(locations: [...currentStack, to, result]);
+          return _register(LocationStack(
+            locations: [...currentStack, to, result],
+          ));
         }
 
-        return LocationStack(
+        return _register(LocationStack(
           locations: [...currentStack, result],
-        );
+        ));
       }
     }
 
     _configuration.addLocation(to, completer: completer, replaced: replaced);
     _configuration.onNavigate?.call(to);
-    return LocationStack(locations: [...currentStack, to]);
+    return _register(LocationStack(locations: [...currentStack, to]));
+  }
+
+  /// Adds every location on [stack] to the directory of locations.
+  ///
+  /// The destination is already added above, together with its completer.
+  /// This covers the rest of the stack: the location an interceptor pushed on
+  /// top of, and any base stack handed to us by a
+  /// [DuckRouterDeepLinkHandler]. Those never went through a navigate of their
+  /// own, so without this they sit on the stack while the router does not know
+  /// about them, and decoding the stack later on - upon state restoration, or
+  /// when the platform reports a new deeplink - throws a
+  /// [LocationStackDecoderException].
+  ///
+  /// Locations that are already in the directory are left alone, so this never
+  /// disturbs a completer that is waiting on a pop.
+  LocationStack _register(LocationStack stack) {
+    for (final l in stack.locations) {
+      _configuration.addLocation(l);
+    }
+    return stack;
   }
 }

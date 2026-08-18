@@ -925,6 +925,35 @@ void main() {
       expect(locations.uri.path, '/home/page1');
     });
 
+    testWidgets('Registers the location it pushes on top of', (tester) async {
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+        interceptors: [
+          ConditionallyPushesOnTopInterceptor(),
+        ],
+      );
+
+      final router = await createRouter(config, tester);
+      await tester.pumpAndSettle();
+
+      // this will be intercepted, putting page3 on top of page2
+      router.navigate(to: Page2Location());
+      await tester.pumpAndSettle();
+
+      final locations = router.routerDelegate.currentConfiguration;
+      expect(locations.uri.path, '/home/page2/page3');
+
+      // Page2 never was a destination of its own, but it is on the stack, so
+      // the router has to be able to find it back when decoding that stack.
+      expect(router.configuration.findLocation('page2'), isNotNull);
+
+      final codec = LocationStackCodec(configuration: router.configuration);
+      expect(
+        codec.decode(codec.encode(locations)).locations.map((l) => l.path),
+        locations.locations.map((l) => l.path),
+      );
+    });
+
     testWidgets('Preserves whole routing path when pushing on top',
         (tester) async {
       final config = DuckRouterConfiguration(
@@ -2303,6 +2332,68 @@ void main() {
       final locations2 = router.routerDelegate.currentConfiguration;
 
       expect(locations2.uri.path, '/home');
+    });
+
+    testWidgets('registers the base stack it is handed', (tester) async {
+      final binding = _retrieveTestBinding(tester);
+      binding.platformDispatcher.defaultRouteNameTestValue = '/page2';
+
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+        onDeepLink: (deeplink, initialLocation) {
+          return [Page1Location(), Page2Location()];
+        },
+      );
+
+      final router = await createRouter(config, tester);
+      await tester.pumpAndSettle();
+
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/page1/page2');
+      expect(router.configuration.findLocation('page1'), isNotNull);
+    });
+
+    testWidgets('handles a deep link after an interceptor pushed on top',
+        (tester) async {
+      final binding = _retrieveTestBinding(tester);
+      binding.platformDispatcher.defaultRouteNameTestValue = '';
+
+      final config = DuckRouterConfiguration(
+        initialLocation: HomeLocation(),
+        interceptors: [
+          ConditionallyPushesOnTopInterceptor(),
+        ],
+        onDeepLink: (deeplink, currentLocation) {
+          return [currentLocation, Page1Location()];
+        },
+      );
+
+      final router = await createRouter(config, tester);
+      await tester.pumpAndSettle();
+
+      // this will be intercepted, putting page3 on top of page2
+      router.navigate(to: Page2Location());
+      await tester.pumpAndSettle();
+      expect(router.routerDelegate.currentConfiguration.uri.path,
+          '/home/page2/page3');
+
+      const Map<String, dynamic> testRouteInformation = <String, dynamic>{
+        'location': '/page1',
+        'state': 'state',
+        'restorationData': <dynamic, dynamic>{'test': 'config'},
+      };
+      final ByteData message = const JSONMethodCodec().encodeMethodCall(
+        const MethodCall('pushRouteInformation', testRouteInformation),
+      );
+
+      // The provider decodes the stack it last reported to work out where we
+      // are, so every location on it has to be known to the router.
+      await tester.binding.defaultBinaryMessenger
+          .handlePlatformMessage('flutter/navigation', message, (_) {});
+      await tester.pumpAndSettle();
+
+      expect(
+          router.routerDelegate.currentConfiguration.uri.path, '/page3/page1');
     });
 
     // We intentionally do not support this feature, see
