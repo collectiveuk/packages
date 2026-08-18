@@ -1,3 +1,7 @@
+## 7.3.4
+
+ - **FIX**: location not registered when pushing on top. ([4f7b6eff](https://github.com/jaspervanriet/duck_router/commit/4f7b6eff5338f1f9c20f82c4c08b10d460c3f010))
+
 ## 7.3.3
 
  - **FIX**: ensure stack integrity when clearing or replacing. ([9ab4996e](https://github.com/jaspervanriet/duck_router/commit/9ab4996e3782f433fda1eaec9c404e703db18017))

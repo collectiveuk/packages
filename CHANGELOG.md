@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-08-18
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`duck_router` - `v7.3.4`](#duck_router---v734)
+
+---
+
+#### `duck_router` - `v7.3.4`
+
+ - **FIX**: location not registered when pushing on top. ([4f7b6eff](https://github.com/jaspervanriet/duck_router/commit/4f7b6eff5338f1f9c20f82c4c08b10d460c3f010))
+
+
 ## 2026-08-09
 
 ### Changes
